@@ -1,6 +1,5 @@
 # IDM Multi-Lane Traffic Simulator
 
-**Version:** 5  
 **Model:** Intelligent Driver Model (IDM) + optional MOBIL lane changing  
 **Application type:** Microscopic traffic simulation
 
@@ -31,6 +30,7 @@ The application provides a graphical user interface, real-time road visualizatio
 - Random seed for reproducible experiments.
 
 ---
+
 
 # 2. Intelligent Driver Model (IDM)
 
