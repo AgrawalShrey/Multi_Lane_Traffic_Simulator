@@ -45,14 +45,7 @@ A major advantage of IDM is that its parameters have direct behavioral interpret
 The model used in the simulator is
 
 \[
-a_i =
-a
-\left[
-1-
-\left(\frac{v_i}{v_{0,i}}\right)^\delta
--
-\left(\frac{s_i^*}{s_i}\right)^2
-\right].
+a_i =a\left[1-\left(\frac{v_i}{v_{0,i}}\right)^\delta-\left(\frac{s_i^*}{s_i}\right)^2\right].
 \]
 
 Here:
@@ -68,12 +61,7 @@ Here:
 The net gap is
 
 \[
-s_i =
-x_{\mathrm{leader}}
--
-L_{\mathrm{leader}}
--
-x_i,
+s_i =x_{\mathrm{leader}}-L_{\mathrm{leader}}-x_i,
 \]
 
 where \(x_i\) is the **front position** of the subject vehicle.
@@ -83,14 +71,7 @@ where \(x_i\) is the **front position** of the subject vehicle.
 The desired gap is
 
 \[
-s_i^*
-=
-s_0
-+
-v_iT
-+
-\frac{v_i\Delta v_i}
-{2\sqrt{ab}},
+s_i^*=s_0+v_iT+\frac{v_i\Delta v_i}{2\sqrt{ab}},
 \]
 
 where
@@ -102,15 +83,7 @@ where
 Thus,
 
 \[
-s_i^*
-=
-\underbrace{s_0}_{\text{minimum gap}}
-+
-\underbrace{v_iT}_{\text{time-headway term}}
-+
-\underbrace{
-\frac{v_i\Delta v_i}{2\sqrt{ab}}
-}_{\text{closing-speed term}}.
+s_i^*=\underbrace{s_0}_{\text{minimum gap}}+\underbrace{v_iT}_{\text{time-headway term}}+\underbrace{\frac{v_i\Delta v_i}{2\sqrt{ab}}}_{\text{closing-speed term}}.
 \]
 
 The desired gap therefore increases with speed and desired time headway, and it increases when the subject vehicle is approaching the leader.
@@ -152,16 +125,7 @@ MOBIL evaluates whether a lane change provides sufficient acceleration benefit w
 The implementation uses the MOBIL acceleration-incentive form
 
 \[
-\Delta a_{\mathrm{ego}}
-+
-p
-\left(
-\Delta a_{\mathrm{new\ follower}}
-+
-\Delta a_{\mathrm{old\ follower}}
-\right)
->
-\Delta a_{\mathrm{th}},
+\Delta a_{\mathrm{ego}}+p\left(\Delta a_{\mathrm{new\ follower}}+\Delta a_{\mathrm{old\ follower}}\right)>\Delta a_{\mathrm{th}},
 \]
 
 where:
@@ -209,11 +173,7 @@ Another vehicle \(i\) occupies
 A lane change is rejected if
 
 \[
-[x-L,x]
-\cap
-[x_i-L_i,x_i]
-\neq
-\varnothing.
+[x-L,x]\cap[x_i-L_i,x_i]\neq\varnothing.
 \]
 
 Therefore:
