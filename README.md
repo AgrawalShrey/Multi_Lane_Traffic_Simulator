@@ -45,18 +45,11 @@ a\left[
 
 The desired dynamic gap is
 
-\[
-s_i^*
-=
-s_0+v_iT+
-\frac{v_i\Delta v_i}{2\sqrt{ab}},
-\]
+\[s_i^*=s_0+v_iT+\frac{v_i\Delta v_i}{2\sqrt{ab}},\]
 
 where
 
-\[
-\Delta v_i=v_i-v_{\mathrm{leader}}.
-\]
+\[\Delta v_i=v_i-v_{\mathrm{leader}}.\]
 
 Parameters:
 
@@ -79,17 +72,7 @@ MOBIL evaluates whether a lane change provides sufficient acceleration benefit w
 
 The implemented incentive criterion is
 
-\[
-\Delta a_{\mathrm{ego}}
-+
-p\left(
-\Delta a_{\mathrm{new\ follower}}
-+
-\Delta a_{\mathrm{old\ follower}}
-\right)
->
-\Delta a_{\mathrm{th}},
-\]
+\[\Delta a_{\mathrm{ego}}+p\left(\Delta a_{\mathrm{new\ follower}}+\Delta a_{\mathrm{old\ follower}}\right)>\Delta a_{\mathrm{th}},\]
 
 where \(p\) is the politeness factor and \(\Delta a_{\mathrm{th}}\) is the incentive threshold.
 
@@ -105,21 +88,15 @@ MOBIL provides a simple and interpretable mechanism for discretionary lane chang
 
 The simulator uses the front-position convention:
 
-\[
-x=\text{front position}.
-\]
+\[x=\text{front position}.\]
 
 A vehicle of length \(L\) occupies
 
-\[
-[x-L,x].
-\]
+\[[x-L,x].\]
 
 A lane change is rejected if this interval overlaps the occupied interval of a vehicle in the target lane:
 
-\[
-[x-L,x]\cap[x_i-L_i,x_i]\neq\varnothing.
-\]
+\[[x-L,x]\cap[x_i-L_i,x_i]\neq\varnothing.\]
 
 The configured minimum clearance is also checked.
 
@@ -178,15 +155,11 @@ Common alternative column names can also be mapped by the calibration module.
 
 For each vehicle class:
 
-\[
-\boxed{v_0,\;s_0,\;T,\;a,\;b,\;\delta}
-\]
+\[\boxed{v_0,\;s_0,\;T,\;a,\;b,\;\delta}\]
 
 ### Calibrated MOBIL parameters
 
-\[
-\boxed{p,\;\Delta a_{\mathrm{th}},\;b_{\mathrm{safe}}}
-\]
+\[\boxed{p,\;\Delta a_{\mathrm{th}},\;b_{\mathrm{safe}}}\]
 
 MOBIL calibration is optional and requires lane-changing information in the trajectory data.
 
@@ -352,16 +325,6 @@ build_onefile.bat
 
 ## Summary
 
-\[
-\boxed{
-\text{IDM}
-+
-\text{MOBIL}
-+
-\text{Calibration}
-+
-\text{Physical Safety Constraints}
-}
-\]
+\[\boxed{\text{IDM}+\text{MOBIL}+\text{Calibration}+\text{Physical Safety Constraints}}\]
 
 The simulator combines interpretable microscopic car-following, discretionary lane changing, class-specific heterogeneous vehicle behavior, trajectory-based model calibration, and physical vehicle-occupancy constraints in a single configurable application.
