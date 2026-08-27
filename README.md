@@ -297,30 +297,6 @@ At startup, select either:
 
 ---
 
-# 13. Windows EXE
-
-Build the recommended Windows application using:
-
-```bat
-build_exe.bat
-```
-
-The generated application is located at:
-
-```text
-dist/
-└── IDM_Traffic_Simulator/
-    └── IDM_Traffic_Simulator.exe
-```
-
-Distribute the complete application folder.
-
-For a single-file executable, use:
-
-```bat
-build_onefile.bat
-```
-
 ---
 
 ## Summary
