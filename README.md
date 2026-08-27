@@ -1,15 +1,15 @@
 # IDM Multi-Lane Traffic Simulator
 
 **Model:** Intelligent Driver Model (IDM) + optional MOBIL lane changing  
-**Application type:** Microscopic traffic simulation
+**Application:** Microscopic traffic simulation and model calibration
 
 ## Overview
 
 The **IDM Multi-Lane Traffic Simulator** is a Python-based microscopic traffic simulation application for studying vehicle-level traffic dynamics on a straight, multi-lane road.
 
-Each vehicle has its own position, speed, acceleration, desired speed, dimensions, vehicle type, and lane. Longitudinal motion is governed by the **Intelligent Driver Model (IDM)**. When enabled, discretionary lane-changing decisions are governed by **MOBIL (Minimizing Overall Braking Induced by Lane changes)**.
+Longitudinal vehicle motion is governed by **IDM**, while discretionary lane changes can be governed by **MOBIL**. The application supports configurable road, demand, vehicle, IDM, MOBIL, and simulation parameters, real-time visualization, trajectories, speed histories, and CSV export.
 
-The application provides a graphical user interface, real-time road visualization, configurable parameters, vehicle trajectories, speed histories, and CSV trajectory export.
+A separate **model calibration module** estimates IDM and MOBIL parameters from observed vehicle trajectory data.
 
 ---
 
@@ -18,60 +18,38 @@ The application provides a graphical user interface, real-time road visualizatio
 - User-defined road length, number of lanes, and lane width.
 - Default configuration: **2 lanes × 3.5 m**.
 - Stochastic vehicle arrivals.
-- Car and truck vehicle classes.
-- User-defined desired-speed distributions and vehicle dimensions.
+- Multiple vehicle classes (e.g., Car, Truck, Auto-Rickshaw, Two-Wheeler, or user-defined classes).
+- Class-specific desired speeds and vehicle dimensions.
 - IDM car-following model.
 - Optional MOBIL lane-changing model.
 - Virtual queue for vehicles unable to enter safely.
 - Physical no-overlap constraint for road entry and lane changing.
 - Real-time multi-lane visualization.
 - Vehicle trajectories and speed histories.
-- CSV export of vehicle-level trajectory data.
-- Random seed for reproducible experiments.
+- CSV trajectory export.
+- Reproducible simulations using a random seed.
 
 ---
 
+# 2. IDM Car-Following Model
 
-# 2. Intelligent Driver Model (IDM)
-
-## 2.1 Purpose
-
-The **Intelligent Driver Model (IDM)** is a continuous microscopic car-following model. It determines how a vehicle accelerates or decelerates according to its current speed, desired speed, gap to the leader, and relative speed.
-
-A major advantage of IDM is that its parameters have direct behavioral interpretations.
-
-## 2.2 IDM acceleration
-
-The model used in the simulator is
+IDM determines the acceleration of vehicle \(i\):
 
 \[
-a_i =a\left[1-\left(\frac{v_i}{v_{0,i}}\right)^\delta-\left(\frac{s_i^*}{s_i}\right)^2\right].
+a_i =
+a\left[
+1-\left(\frac{v_i}{v_{0,i}}\right)^\delta
+-\left(\frac{s_i^*}{s_i}\right)^2
+\right].
 \]
 
-Here:
-
-- \(a_i\) = acceleration of vehicle \(i\);
-- \(a\) = acceleration parameter;
-- \(v_i\) = current speed;
-- \(v_{0,i}\) = desired speed;
-- \(\delta\) = acceleration exponent;
-- \(s_i\) = current net gap to the leader;
-- \(s_i^*\) = desired dynamic gap.
-
-The net gap is
+The desired dynamic gap is
 
 \[
-s_i =x_{\mathrm{leader}}-L_{\mathrm{leader}}-x_i,
-\]
-
-where \(x_i\) is the **front position** of the subject vehicle.
-
-## 2.3 Desired dynamic gap
-
-The desired gap is
-
-\[
-s_i^*=s_0+v_iT+\frac{v_i\Delta v_i}{2\sqrt{ab}},
+s_i^*
+=
+s_0+v_iT+
+\frac{v_i\Delta v_i}{2\sqrt{ab}},
 \]
 
 where
@@ -80,349 +58,252 @@ where
 \Delta v_i=v_i-v_{\mathrm{leader}}.
 \]
 
-Thus,
+Parameters:
 
-\[
-s_i^*=\underbrace{s_0}_{\text{minimum gap}}+\underbrace{v_iT}_{\text{time-headway term}}+\underbrace{\frac{v_i\Delta v_i}{2\sqrt{ab}}}_{\text{closing-speed term}}.
-\]
+- \(v_0\): desired speed
+- \(s_0\): minimum gap
+- \(T\): desired time headway
+- \(a\): acceleration
+- \(b\): comfortable deceleration
+- \(\delta\): acceleration exponent
 
-The desired gap therefore increases with speed and desired time headway, and it increases when the subject vehicle is approaching the leader.
+### Why IDM?
 
-## 2.4 Advantages of IDM
-
-### Interpretable parameters
-Parameters such as \(s_0\), \(T\), \(a\), \(b\), and \(v_0\) have clear behavioral meanings.
-
-### Smooth car-following dynamics
-IDM provides continuous acceleration and deceleration rather than simple discrete rules.
-
-### Free-road behavior
-When no leader constrains the vehicle, it tends toward its desired speed.
-
-### Gap adaptation
-Acceleration automatically responds to the available gap and closing speed.
-
-### Easy calibration and sensitivity analysis
-Parameters can be changed independently for experiments and teaching.
-
-### Modular longitudinal behavior
-IDM can be combined naturally with a separate lane-changing model such as MOBIL.
+IDM provides smooth, interpretable car-following behavior. Its parameters have direct behavioral meanings and can be calibrated or varied independently, making it suitable for microscopic traffic studies and sensitivity analysis.
 
 ---
 
 # 3. MOBIL Lane-Changing Model
 
-## 3.1 Purpose
-
-IDM determines how a vehicle behaves **within its current lane**. It does not decide whether the vehicle should move to another lane.
-
-The simulator therefore uses **MOBIL** as an optional lane-changing decision model.
-
 MOBIL evaluates whether a lane change provides sufficient acceleration benefit while considering its effect on surrounding vehicles.
 
-## 3.2 Incentive criterion
-
-The implementation uses the MOBIL acceleration-incentive form
+The implemented incentive criterion is
 
 \[
-\Delta a_{\mathrm{ego}}+p\left(\Delta a_{\mathrm{new\ follower}}+\Delta a_{\mathrm{old\ follower}}\right)>\Delta a_{\mathrm{th}},
+\Delta a_{\mathrm{ego}}
++
+p\left(
+\Delta a_{\mathrm{new\ follower}}
++
+\Delta a_{\mathrm{old\ follower}}
+\right)
+>
+\Delta a_{\mathrm{th}},
 \]
 
-where:
+where \(p\) is the politeness factor and \(\Delta a_{\mathrm{th}}\) is the incentive threshold.
 
-- \(\Delta a_{\mathrm{ego}}\) = change in the subject vehicle's acceleration;
-- \(\Delta a_{\mathrm{new\ follower}}\) = acceleration change of the follower in the target lane;
-- \(\Delta a_{\mathrm{old\ follower}}\) = acceleration change of the follower in the original lane;
-- \(p\) = politeness factor;
-- \(\Delta a_{\mathrm{th}}\) = minimum incentive threshold.
+IDM is used to calculate the relevant accelerations.
 
-The accelerations used in this criterion are calculated using IDM.
+### Why MOBIL?
 
-## 3.3 Politeness factor
-
-The parameter \(p\) represents how much the subject vehicle considers the effect of its lane change on surrounding vehicles.
-
-For
-
-\[
-p=0,
-\]
-
-the decision is based primarily on the subject vehicle's own acceleration advantage.
-
-Increasing \(p\) makes the lane-changing driver more considerate of acceleration changes imposed on other vehicles.
+MOBIL provides a simple and interpretable mechanism for discretionary lane changing while accounting for both the subject vehicle's benefit and the effect on surrounding traffic.
 
 ---
 
-# 4. Physical Safety Constraint
+# 4. Physical Safety and Vehicle Entry
 
-The simulator adds a hard geometric safety constraint to MOBIL.
-
-The simulator defines \(x\) as the **front position** of a vehicle. A vehicle of length \(L\) therefore occupies
+The simulator uses the front-position convention:
 
 \[
-[x-L,\;x].
+x=\text{front position}.
 \]
 
-Another vehicle \(i\) occupies
+A vehicle of length \(L\) occupies
 
 \[
-[x_i-L_i,\;x_i].
+[x-L,x].
 \]
 
-A lane change is rejected if
+A lane change is rejected if this interval overlaps the occupied interval of a vehicle in the target lane:
 
 \[
 [x-L,x]\cap[x_i-L_i,x_i]\neq\varnothing.
 \]
 
-Therefore:
+The configured minimum clearance is also checked.
 
-> **MOBIL can never override a physical vehicle-overlap condition.**
-
-The simulator also checks the configured minimum longitudinal clearance.
-
-This prevents vehicles from appearing to collide during lane changes.
+Vehicles that cannot safely enter the road are placed in a **virtual queue**. Queued vehicles are not part of the on-road traffic list and are therefore not visualized until successful entry.
 
 ---
 
-# 5. Safe Vehicle Entry and Virtual Queue
+# 5. Model Calibration
 
-A generated vehicle is first treated as an arrival candidate. It is inserted into a lane only if the physical entrance position is safe.
-
-If a safe lane is available:
+The application provides a separate **Model Calibration** mode at startup:
 
 ```text
-Generated vehicle
-       ↓
-Physical entry check
-       ↓
-Successful
-       ↓
-On-road traffic
-       ↓
-Visualization
+Start
+ ├── Default / Simulation
+ └── Model Calibration
 ```
 
-If no safe lane is available:
+Calibration uses observed vehicle trajectory data and estimates model parameters before running the simulator.
+
+### Required trajectory fields
+
+The calibration CSV should contain:
 
 ```text
-Generated vehicle
-       ↓
-Physical entry check
-       ↓
-Unsafe
-       ↓
-Virtual queue
-       ↓
-Wait and retry
+time
+ID
+position
+vehicle_class
+speed
+Lane
 ```
 
-Vehicles in the virtual queue are **not part of the on-road traffic list** and therefore are **not visualized**.
+Recommended additional fields:
 
-This prevents unrealistic overlapping vehicles at the road entrance under high traffic demand.
+```text
+length
+width
+```
+
+Common alternative column names can also be mapped by the calibration module.
+
+### Calibration procedure
+
+1. Load and validate the trajectory CSV.
+2. Determine the simulation time step.
+3. Identify vehicle classes.
+4. Construct leader–follower observations.
+5. Calculate observed gaps and speeds.
+6. Estimate IDM parameters for each vehicle class.
+7. Estimate MOBIL parameters when lane-changing observations are available.
+8. Evaluate calibration error.
+9. Save the calibrated parameter profile.
+10. Apply the profile to the simulator.
+
+### Calibrated IDM parameters
+
+For each vehicle class:
+
+\[
+\boxed{v_0,\;s_0,\;T,\;a,\;b,\;\delta}
+\]
+
+### Calibrated MOBIL parameters
+
+\[
+\boxed{p,\;\Delta a_{\mathrm{th}},\;b_{\mathrm{safe}}}
+\]
+
+MOBIL calibration is optional and requires lane-changing information in the trajectory data.
+
+The calibration module is intended to provide class-specific behavioral parameters for heterogeneous traffic simulation.
 
 ---
 
-# 6. IDM + MOBIL Framework
+# 6. Multiple Vehicle Classes
 
-The simulator separates longitudinal and lane-changing behavior:
+The simulator is not restricted to Car and Truck.
+
+Users can define multiple classes, for example:
 
 ```text
-                  VEHICLE
-                     |
-          +----------+----------+
-          |                     |
-          v                     v
-         IDM                  MOBIL
-          |                     |
-          v                     v
-  Longitudinal motion     Lane-change decision
-          |                     |
-          +----------+----------+
-                     |
-                     v
-              Updated state
-          x, speed, acceleration,
-                  lane
+Car
+Truck
+Auto-Rickshaw
+Two-Wheeler
+Bus
+LCV
+HCV
 ```
 
-### IDM asks
+Each class can have its own:
 
-> How should the vehicle accelerate or decelerate in its current lane?
+- composition;
+- desired-speed distribution;
+- vehicle length;
+- vehicle width;
+- IDM parameters.
 
-### MOBIL asks
-
-> Is changing to an adjacent lane beneficial and safe?
-
-This separation makes the framework modular and extensible.
+This allows the simulator to represent heterogeneous traffic and to apply class-specific calibrated parameters.
 
 ---
 
 # 7. Simulation Workflow
 
-At each microscopic time step, the simulator:
+At each time step:
 
-1. Processes new vehicle arrivals.
-2. Attempts physical road entry.
-3. Places blocked vehicles in the virtual queue.
-4. Evaluates MOBIL lane-changing decisions if enabled.
-5. Applies the hard geometric no-overlap condition.
-6. Computes longitudinal acceleration using IDM.
-7. Updates speed and position.
-8. Attempts to release queued vehicles.
-9. Records on-road vehicle trajectories.
-10. Removes vehicles that leave the road.
-11. Updates the visualization.
-
----
-
-# 8. Position Convention
-
-The simulator consistently uses
-
-\[
-x=\text{front position of vehicle}.
-\]
-
-Therefore:
-
-\[
-\boxed{\text{occupied interval}=[x-L,x]}
-\]
-
-This convention is used for:
-
-- IDM gap calculation;
-- vehicle entry;
-- lane-changing safety;
-- physical overlap detection;
-- visualization;
-- trajectory output.
+1. Process vehicle arrivals.
+2. Attempt safe road entry.
+3. Place blocked vehicles in the virtual queue.
+4. Evaluate MOBIL lane changes if enabled.
+5. Apply geometric no-overlap checks.
+6. Calculate IDM acceleration.
+7. Update vehicle speed and position.
+8. Attempt queued-vehicle entry.
+9. Record trajectories.
+10. Remove vehicles leaving the road.
+11. Update visualization.
 
 ---
 
-# 9. User-Configurable Parameters
+# 8. User-Configurable Parameters
 
-| Category | Parameter | Meaning |
-|---|---|---|
-| Road | Road length | Simulated road length |
-| Road | Number of lanes | Number of parallel lanes |
-| Road | Lane width | Width of each lane |
-| Demand | Volume | Arrival demand (veh/h) |
-| Demand | Car composition | Fraction of cars |
-| Vehicle | Desired speed | Mean and variation by type |
-| Vehicle | Length / width | Physical vehicle dimensions |
-| IDM | \(s_0\) | Minimum gap |
-| IDM | \(T\) | Desired time headway |
-| IDM | \(a\) | Acceleration parameter |
-| IDM | \(b\) | Comfortable deceleration |
-| IDM | \(\delta\) | Acceleration exponent |
-| MOBIL | Enable/disable | Activates lane changing |
-| MOBIL | \(p\) | Politeness factor |
-| MOBIL | Threshold | Minimum lane-change incentive |
-| MOBIL | Safe deceleration | Target-follower safety criterion |
-| Simulation | Time step | Microscopic simulation interval |
-| Simulation | Simulation time | Total simulation duration |
-| Randomness | Seed | Reproducibility |
+| Category | Parameters |
+|---|---|
+| Road | Length, number of lanes, lane width |
+| Demand | Volume, vehicle-class composition |
+| Vehicle | Class, desired speed, length, width |
+| IDM | \(s_0, T, a, b, \delta\) |
+| MOBIL | Enable/disable, \(p\), incentive threshold, safe deceleration |
+| Simulation | Time step, simulation time |
+| Randomness | Random seed |
 
 ---
 
-# 10. Advantages of the Combined IDM–MOBIL Approach
+# 9. Output
 
-### IDM provides
-- longitudinal car-following;
-- speed adaptation;
-- gap keeping;
-- acceleration and deceleration;
-- interpretable behavioral parameters.
+The simulator provides:
 
-### MOBIL provides
-- discretionary lane-changing;
-- acceleration-based lane-change incentives;
-- driver politeness;
-- consideration of surrounding vehicles.
+- real-time road visualization;
+- vehicle trajectories;
+- speed histories;
+- simulation status;
+- CSV trajectory export.
 
-### Physical constraints provide
-- safe road entry;
-- no overlap during lane changes;
-- realistic virtual queue formation under high demand.
+Typical trajectory variables include:
 
-Together,
+```text
+time
+vehicle ID
+vehicle class
+lane
+position
+speed
+acceleration
+gap
+vehicle dimensions
+```
 
-\[
-\boxed{
-\text{Microscopic Traffic Dynamics}
-=
-\text{IDM Longitudinal Model}
-+
-\text{MOBIL Lane-Changing Model}
-+
-\text{Physical Safety Constraints}
-}
-\]
+Calibration results can be saved as a parameter profile and used for subsequent simulations.
 
 ---
 
-# 11. Output
+# 10. Intended Applications
 
-The simulator can export vehicle-level trajectory data to CSV.
-
-Typical variables include:
-
-- time;
-- vehicle ID;
-- vehicle type;
-- lane;
-- arrival time;
-- desired speed;
-- length;
-- width;
-- front position \(x\);
-- speed;
-- acceleration;
-- gap.
-
-The output can be analyzed using Python, MATLAB, Excel, or other data-analysis tools.
+- Microscopic traffic-flow research
+- IDM parameter calibration
+- Heterogeneous traffic modelling
+- Lane-changing studies
+- Congestion and queue analysis
+- Model sensitivity analysis
+- Traffic-model teaching
+- Vehicle trajectory generation
 
 ---
 
-# 12. Intended Applications
+# 11. Current Scope
 
-The simulator is suitable for:
+The current version models a **straight multi-lane road**.
 
-- microscopic traffic-flow demonstrations;
-- IDM parameter sensitivity studies;
-- lane-changing experiments;
-- congestion and queue formation studies;
-- traffic-model teaching;
-- comparison of IDM-only and IDM+MOBIL behavior;
-- trajectory-data generation;
-- preliminary research experiments.
+It does not currently include intersections, traffic signals, curved roads, pedestrian interactions, route choice, or complex road networks.
 
 ---
 
-# 13. Current Scope and Limitations
-
-The current simulator represents a **straight road with parallel lanes**.
-
-It does not currently include:
-
-- intersections;
-- traffic signals;
-- curved roads;
-- pedestrian interactions;
-- complex road networks;
-- route choice;
-- traffic-light control;
-- detailed connected-vehicle communication;
-- advanced driver-assistance systems.
-
-These can be incorporated in future versions.
-
----
-
-# 14. Running the Python Application
+# 12. Running the Application
 
 Install dependencies:
 
@@ -436,19 +317,22 @@ Run:
 python main.py
 ```
 
+At startup, select either:
+
+- **Default / Simulation** — configure and run the simulator.
+- **Model Calibration** — estimate model parameters from trajectory data.
+
 ---
 
-# 15. Building the Windows EXE
+# 13. Windows EXE
 
-The project includes a PyInstaller build script.
-
-Run:
+Build the recommended Windows application using:
 
 ```bat
 build_exe.bat
 ```
 
-The recommended distribution is the generated:
+The generated application is located at:
 
 ```text
 dist/
@@ -458,7 +342,7 @@ dist/
 
 Distribute the complete application folder.
 
-A single-file build can also be created using:
+For a single-file executable, use:
 
 ```bat
 build_onefile.bat
@@ -466,9 +350,7 @@ build_onefile.bat
 
 ---
 
-# 16. Summary
-
-The simulator combines:
+## Summary
 
 \[
 \boxed{
@@ -476,10 +358,10 @@ The simulator combines:
 +
 \text{MOBIL}
 +
+\text{Calibration}
++
 \text{Physical Safety Constraints}
 }
 \]
 
-IDM governs longitudinal vehicle dynamics, MOBIL governs discretionary lane-changing decisions, and explicit geometric checks prevent physically impossible vehicle overlap during road entry and lane changing.
-
-The result is a configurable and visually accessible microscopic traffic simulation platform for studying car-following, lane changing, congestion, queue formation, lane utilization, and vehicle trajectories.
+The simulator combines interpretable microscopic car-following, discretionary lane changing, class-specific heterogeneous vehicle behavior, trajectory-based model calibration, and physical vehicle-occupancy constraints in a single configurable application.
